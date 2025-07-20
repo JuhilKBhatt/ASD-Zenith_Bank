@@ -18,7 +18,6 @@ import {
   ArcElement,
 } from 'chart.js';
 
-// Register necessary components for Chart.js
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
 
 // Custom Card Styling
@@ -33,23 +32,29 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   },
 }));
 
-// Mock months (can be fetched dynamically)
+// Mock months
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-function MonthlyStatement({ userId }) {
+function MonthlyStatement() {
   const [selectedMonth, setSelectedMonth] = useState('January');
   const [transactions, setTransactions] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
   // Fetch transactions from MongoDB via Flask backend
   const fetchTransactions = async (month) => {
     try {
-      const response = await axios.get(`/api/user/${userId}/transactions`, {
+      const response = await axios.get(`/api/user/transactions`, {
         params: { month },
+        withCredentials: true,  // Ensure cookies are sent
       });
       setTransactions(response.data);
     } catch (error) {
-      console.error('Error fetching transactions', error);
+      if (error.response && error.response.data.error) {
+        setErrorMessage(error.response.data.error);
+      } else {
+        console.error('Error fetching transactions', error);
+      }
     }
   };
 
@@ -57,11 +62,19 @@ function MonthlyStatement({ userId }) {
     fetchTransactions(selectedMonth); // Fetch transactions when the month changes
   }, [selectedMonth]);
 
-  // Calculate totals for income and expenses
   const totalIncome = transactions.filter((txn) => txn.type === 'deposit').reduce((acc, txn) => acc + txn.amount, 0);
   const totalExpenses = transactions.filter((txn) => txn.type === 'withdrawal').reduce((acc, txn) => acc + txn.amount, 0);
 
-  // Line chart data for monthly transaction overview
+  if (errorMessage) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 5 }}>
+        <Typography variant="h4" align="center" color="error">
+          {errorMessage}
+        </Typography>
+      </Container>
+    );
+  }
+
   const lineChartData = {
     labels: transactions.map((txn) => txn.date),
     datasets: [
@@ -124,7 +137,6 @@ function MonthlyStatement({ userId }) {
           Go Back
         </Button>
 
-        {/* Month Selection */}
         <FormControl fullWidth sx={{ mb: 3 }}>
           <InputLabel sx={{ color: '#fff' }}>Select Month</InputLabel>
           <Select
