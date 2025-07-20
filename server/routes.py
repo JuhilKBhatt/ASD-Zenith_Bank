@@ -356,21 +356,98 @@ def get_user_payees():
         return jsonify({"payees": payees}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+@api.route('/api/user/<user_id>/transaction', methods=['POST'])
+def add_transaction(user_id):
+    data = request.json
+    try:
+        # Validate sender's account
+        sender_account_id = ObjectId(data.get('accountId'))
+        sender_account = accounts_collection.find_one({"_id": sender_account_id, "userID": ObjectId(user_id)})
+
+        if not sender_account:
+            return jsonify({"error": "Sender account not found or does not belong to the user"}), 404
+
+        # Validate recipient account if it's a transfer
+        recipient_account_id = data.get('recipient')
+        if data['type'] == 'transfer' and recipient_account_id:
+            recipient_account_id = ObjectId(recipient_account_id)
+            recipient_account = accounts_collection.find_one({"_id": recipient_account_id})
+            if not recipient_account:
+                return jsonify({"error": "Recipient account not found"}), 404
+
+        # Prepare transaction data
+        date = data.get('date', datetime.now().strftime("%Y-%m-%d"))
+        amount = float(data['amount'])
+        new_transaction = {
+            "AccountID": sender_account_id,
+            "CategoryID": data['category'],
+            "Date": date,
+            "Amount": -amount if data['type'] == 'transfer' else amount,
+            "Description": f"{data['type'].capitalize()} {'to' if data['type'] == 'transfer' else 'of'} ${amount}"
+        }
+
+        # Insert the transaction log for the sender
+        transaction_logs_collection.insert_one(new_transaction)
+
+        # If it's a transfer, create a corresponding entry for the recipient
+        if data['type'] == 'transfer':
+            recipient_transaction = {
+                "AccountID": recipient_account_id,
+                "CategoryID": data['category'],
+                "Date": date,
+                "Amount": amount,
+                "Description": f"Transfer from Account {str(sender_account_id)}"
+            }
+            transaction_logs_collection.insert_one(recipient_transaction)
+
+            # Update balances for both accounts
+            accounts_collection.update_one({"_id": sender_account_id}, {"$inc": {"balance": -amount}})
+            accounts_collection.update_one({"_id": recipient_account_id}, {"$inc": {"balance": amount}})
+        
+        return jsonify({"message": "Transaction added successfully"}), 201
+    except Exception as e:
+        print(f"Error in add_transaction: {e}")
+        return jsonify({"error": "An error occurred while processing the transaction"}), 500
+
+
+# Route to fetch payees for the logged-in user
+@api.route('/api/user/payees', methods=['GET'])
+def get_user_payees():
+    try:
+        # Get the user_id from the cookies
+        user_id = request.cookies.get('user_id')
+        if not user_id:
+            return jsonify({"error": "User not found in cookies"}), 400
+
+        # Convert user_id to ObjectId
+        user_object_id = ObjectId(user_id)
+
+        # Find the user by user_id
+        user = users_collection.find_one({"_id": user_object_id})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Retrieve the payees/recipients associated with the user
+        payees = user.get("payees", [])
+
+        return jsonify({"payees": payees}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # Route to get all users
 @api.route('/api/users', methods=['GET'])
 def get_all_users():
     try:
         # Fetch all users from the 'users' collection
-        users = list(users_collection.find({}, {'_id': 0}))  # Exclude the '_id' field for cleaner output
-
+        users = list(users_collection.find({}, {'_id': 0}))
         if not users:
             return jsonify({"message": "No users found."}), 404
 
         return jsonify(users), 200
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
 
 # Route to get all AccountIDs by UserID
 @api.route('/api/get_accounts_by_user', methods=['GET'])
@@ -378,7 +455,6 @@ def get_accounts_by_user():
     try:
         # Get user_id from the cookies
         user_id = request.cookies.get('user_id')
-
         if not user_id:
             return jsonify({"error": "User ID not found in cookies!"}), 400
 
@@ -400,7 +476,6 @@ def get_accounts_by_user():
         }
 
         return jsonify(response), 200
-
     except Exception as e:
         print(f"Error fetching accounts by user_id: {e}")
         return jsonify({"error": str(e)}), 500
@@ -593,3 +668,38 @@ def check_authentication():
     except Exception as e:
         print(f"Error during authentication check: {e}")
         return jsonify({"error": "Authentication check failed"}), 500
+    
+
+
+@api.route('/api/user_accounts', methods=['GET'])
+def get_user_accounts():
+    try:
+        # Get user_id from the cookies
+        user_id = request.cookies.get('user_id')
+
+        if not user_id:
+            return jsonify({"error": "User ID not found in cookies!"}), 400
+
+        # Convert the user_id to an ObjectId
+        user_id = ObjectId(user_id)
+
+        # Find all accounts associated with the user
+        accounts = list(accounts_collection.find({"userID": user_id}, {"_id": 1, "accountType": 1, "balance": 1}))
+        if not accounts:
+            return jsonify({"message": "No accounts found for this user"}), 404
+
+        # Serialize accounts data to include account type and balance
+        serialized_accounts = [
+            {
+                "id": str(account["_id"]),
+                "accountType": account["accountType"],
+                "balance": account["balance"]
+            }
+            for account in accounts
+        ]
+
+        return jsonify({"UserID": str(user_id), "Accounts": serialized_accounts}), 200
+
+    except Exception as e:
+        print(f"Error fetching user accounts: {e}")
+        return jsonify({"error": str(e)}), 500
