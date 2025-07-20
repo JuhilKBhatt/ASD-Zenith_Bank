@@ -95,7 +95,6 @@ function MonthlyStatement() {
     ],
   };
 
-  // Pie chart data for transaction categories breakdown
   const pieChartData = {
     labels: [...new Set(transactions.map((txn) => txn.category))],
     datasets: [
@@ -119,7 +118,6 @@ function MonthlyStatement() {
           Monthly Bank Statement
         </Typography>
 
-        {/* Go Back Button */}
         <Button
           variant="outlined"
           color="primary"
@@ -163,7 +161,6 @@ function MonthlyStatement() {
           </Select>
         </FormControl>
 
-        {/* Transaction Summary */}
         <Box sx={{ mb: 4, color: '#fff' }}>
           <Typography variant="h6">Summary for {selectedMonth}:</Typography>
           <Typography variant="body1">Total Income: ${totalIncome}</Typography>
@@ -172,7 +169,6 @@ function MonthlyStatement() {
 
         <Divider sx={{ my: 3, backgroundColor: '#fff' }} />
 
-        {/* Charts Section */}
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
             <StyledPaper>
@@ -195,7 +191,6 @@ function MonthlyStatement() {
 
         <Divider sx={{ my: 3, backgroundColor: '#fff' }} />
 
-        {/* Transaction Table */}
         <StyledPaper>
           <Typography variant="h6" gutterBottom>
             Detailed Transactions:
