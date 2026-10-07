@@ -1,0 +1,39 @@
+{
+  "title": "Zenith Bank",
+  "description": "A comprehensive full-stack online banking web application built with React and Flask, featuring secure session-based authentication, multi-account management, real-time transfers, scheduled payments, interactive Chart.js financial analytics, and client-side bank statement PDF export.",
+  "techStack": {
+    "Frontend": [
+      "React",
+      "JavaScript"
+    ],
+    "Backend": [
+      "Python",
+      "MongoDB"
+    ],
+    "AI": [],
+    "DevSecOps": [
+      "Azure",
+      "Github"
+    ],
+    "Test Automation": [
+      "Pytest",
+      "Jest"
+    ]
+  },
+  "liveDemo": "",
+  "images": [],
+  "videoDemo": "",
+  "Priority": 2,
+  "category": "Web App",
+  "type": "Team",
+  "version": "Beta",
+  "versionNumber": "0.6.8",
+  "Highlights": [
+    "Full-lifecycle banking and account management system featuring deposit, withdrawal, and fund transfer workflows with atomic MongoDB balance updates",
+    "Dynamic financial data visualization and reporting powered by Chart.js, with client-side PDF bank statement generation via jsPDF and html2canvas",
+    "Comprehensive transaction audit ledger with real-time multi-account filtering by date range, account ID, and transaction threshold",
+    "Automated payment scheduling and payee management engine supporting CRUD workflows and recurring payment records",
+    "Enterprise multi-pipeline CI/CD architecture leveraging GitHub Actions and Azure Pipelines for automated testing (Pytest & Jest) and deployment to Azure App Service"
+  ],
+  "Visibilty": true
+}
